@@ -35,6 +35,16 @@ class StoreCutTicketRequest extends FormRequest
             ],
             'bundle_size' => ['required', 'integer', 'min:1'],
             'planned_quantity' => ['required', 'integer', 'min:1'],
+            // PRD v2 §3.24 — set only when this ticket is created by
+            // App\Services\SubcontractInwardService for an Inward job;
+            // never accepted on a plain cutting-desk ticket in practice,
+            // but validated here so the shared endpoint stays safe.
+            'inward_subcontract_order_id' => [
+                'nullable', 'integer',
+                Rule::exists('subcontract_orders', 'id')
+                    ->whereNull('deleted_at')
+                    ->where('direction', 'inward'),
+            ],
         ];
     }
 }

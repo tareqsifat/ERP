@@ -12,12 +12,18 @@ use Modules\Location\App\Models\Location;
 use Modules\Order\App\Models\Order;
 use Modules\Production\Database\Factories\CutTicketFactory;
 use Modules\RawMaterial\App\Models\RawMaterial;
+use Modules\Subcontract\App\Models\SubcontractOrder;
 
 // status/finalized_at absent from #[Fillable] — only
 // App\Services\CuttingService::finalize() writes them.
+// inward_subcontract_order_id: PRD v2 §3.24 — optional tag marking this
+// ticket as processing an Inward Subcontract job (see
+// Modules/Subcontract's add_inward_subcontract_order_id_to_cut_tickets_table
+// migration and App\Services\QcService's inward branch).
 #[Fillable([
     'order_id', 'booking_id', 'style', 'color', 'size', 'cut_date', 'cutting_master_id',
     'raw_material_id', 'fabric_consumed', 'location_id', 'bundle_size', 'planned_quantity',
+    'inward_subcontract_order_id',
 ])]
 class CutTicket extends Model
 {
@@ -66,5 +72,10 @@ class CutTicket extends Model
     public function bundles()
     {
         return $this->hasMany(Bundle::class);
+    }
+
+    public function inwardSubcontractOrder()
+    {
+        return $this->belongsTo(SubcontractOrder::class, 'inward_subcontract_order_id');
     }
 }

@@ -114,13 +114,30 @@ on, especially given the traceability and money-touching modules.
 
 ## Phase 5 — Subcontracting
 
-- [ ] Outward Subcontract: issue (serials and/or raw material) →
-      return → QC → Finished Goods intake → Subcontractor Ledger
-- [ ] Inward Subcontract: receive → process (cutting/sewing/QC,
+- [x] Outward Subcontract: issue (serials and/or raw material) →
+      return → QC → Finished Goods intake → Subcontractor Ledger.
+      Backend done (`Modules/Subcontract`): SubcontractOrder/
+      SubcontractOrderPiece/SubcontractLedgerEntry models,
+      SubcontractOutwardService (issuePieces/issueRawMaterial/
+      returnPieces/refreshStatus), full REST API, RoleSeeder grants,
+      `SubcontractOutwardModuleTest` covering issue/return/write-off/
+      permission-denied — written but not run against a real DB (no
+      composer install / MySQL in this sandbox, same caveat as Phase 4).
+      QC → Finished Goods intake is the *existing* Production QC flow
+      (returned pieces go back to `sewn`, i.e. QC-ready) — no separate
+      code path needed for that leg.
+- [x] Inward Subcontract: receive → process (cutting/sewing/QC,
       tagged separately from own stock) → dispatch back → job-work
-      income entry
+      income entry. Backend done: `CutTicket.inward_subcontract_order_id`
+      tag, `QcService::pass()` inward branch (stays `qc_passed`, skips
+      Finished Goods intake), `SubcontractInwardService::dispatchBack()`
+      (ships via the existing `shipped` status + posts job_work_income),
+      `SubcontractInwardModuleTest` covering the full QC→dispatch-back
+      chain + permission-denied — written but not run against a real DB.
 - [ ] Manually run one outward and one inward subcontract cycle
-      end-to-end in the UI
+      end-to-end in the UI. Blocked on the Phase 5 frontend (in progress)
+      and on a real backend run (composer install/MySQL unavailable in
+      this sandbox).
 
 ## Phase 6 — Accounting & HRM (v1 PRD scope, largely unchanged)
 

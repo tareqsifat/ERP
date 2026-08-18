@@ -22,7 +22,10 @@ class RoleSeeder extends Seeder
             'order.view', 'booking.view', 'sampling.view', 'shipment.view',
         ],
 
-        // PRD v2 §1: "Orders, bookings, buyer liaison."
+        // PRD v2 §1: "Orders, bookings, buyer liaison." Placing Outward
+        // job work (§3.23) is a merchandising decision (which order/style
+        // goes to which subcontractor), so it's granted here rather than
+        // to Production.
         'Merchandiser' => [
             'order.view', 'order.create', 'order.edit',
             'booking.view', 'booking.create', 'booking.edit',
@@ -30,6 +33,7 @@ class RoleSeeder extends Seeder
             'sampling.view', 'sampling.create', 'sampling.edit',
             'party.view', 'shipment.view',
             'production.trace.view', 'report.view',
+            'subcontract.outward.manage', 'subcontract.ledger.view',
         ],
 
         // PRD v2 §1: "Banking, shipments, LC/documents."
@@ -47,16 +51,21 @@ class RoleSeeder extends Seeder
             'accounting.ledger.view', 'accounting.cashbook.view',
             'accounting.transaction.view', 'accounting.loss-profit.view',
             'party.view', 'hrm.salary.view', 'hrm.salary.pay', 'report.view',
+            'subcontract.ledger.view',
         ],
 
         // PRD v1 §1: "Production tracking" (broader floor-level oversight
         // role, above the narrower Cutting Master / Line Supervisor roles).
+        // Both subcontract directions touch the floor operationally
+        // (issuing pieces/raw material out, receiving+QCing job work in
+        // — PRD v2 §3.23/§3.24), so Production holds both manage grants.
         'Production' => [
             'production.cutting.view', 'production.cutting.create',
             'production.sewing.view', 'production.sewing.create',
             'production.qc.record', 'production.trace.view',
             'machine.view', 'machine.create', 'machine.edit',
             'raw-material.view', 'report.view',
+            'subcontract.outward.manage', 'subcontract.inward.manage', 'subcontract.ledger.view',
         ],
 
         // PRD v2 §1/§6: "Cutting entries, serial generation, line

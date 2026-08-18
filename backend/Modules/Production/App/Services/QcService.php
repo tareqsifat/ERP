@@ -33,6 +33,17 @@ class QcService
             $piece->qc_reject_reason = null;
             $piece->save();
 
+            // PRD v2 §3.24 — a piece cut against an Inward Subcontract job
+            // was never ours: it belongs to the external party who
+            // brought the fabric. Leave it at `qc_passed` rather than
+            // intaking it into our own Finished Goods; it stays there
+            // until Modules\Subcontract\App\Services\SubcontractInwardService::dispatchBack()
+            // ships it back out.
+            $piece->loadMissing('bundle.cutTicket');
+            if ($piece->bundle->cutTicket->inward_subcontract_order_id) {
+                return $piece;
+            }
+
             FinishedGoodsStockService::intakeFromQc($piece, $intakeLocation, $qcByUserId);
 
             // Closes the loop: the piece now lives in Finished Goods, not

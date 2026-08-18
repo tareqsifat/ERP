@@ -44,13 +44,18 @@ class RoleSeeder extends Seeder
             'party.view', 'report.view',
         ],
 
-        // PRD v2 §1: "Vouchers, ledgers, cashbook, banking."
+        // PRD v2 §1: "Vouchers, ledgers, cashbook, banking." PRD v1 §3.11's
+        // HRM (Designations/Employees/Salaries) has no dedicated persona of
+        // its own, so it's granted here too — bookkeeping and HR admin are
+        // commonly one seat in a factory this size, and Accountant is the
+        // closest existing role to "handles the books."
         'Accountant' => [
             'accounting.bank.manage', 'accounting.cash.manage', 'accounting.cheque.manage',
             'accounting.voucher.view', 'accounting.voucher.create',
             'accounting.ledger.view', 'accounting.cashbook.view',
             'accounting.transaction.view', 'accounting.loss-profit.view',
-            'party.view', 'hrm.salary.view', 'hrm.salary.pay', 'report.view',
+            'party.view', 'hrm.designation.manage', 'hrm.employee.manage',
+            'hrm.salary.view', 'hrm.salary.pay', 'report.view',
             'subcontract.ledger.view',
         ],
 

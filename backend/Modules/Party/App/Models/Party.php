@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Accounting\App\Models\PartyBill;
+use Modules\Accounting\App\Models\Voucher;
 use Modules\Party\Database\Factories\PartyFactory;
 
 /**
@@ -13,8 +15,9 @@ use Modules\Party\Database\Factories\PartyFactory;
  * shown in the PRD as columns are deliberately NOT stored here — sdd.md §5's
  * "ledger is the source of truth, not a mutable column that drifts"
  * principle applies to money the same way it applies to stock. Those
- * figures will be computed from Modules/Accounting vouchers once that
- * module exists (Phase 6); see this module's README "Known gaps".
+ * figures are computed from Modules/Accounting's PartyBill/Voucher
+ * ledgers (Phase 6) via App\Services\PartyFinancialsService — see
+ * PartyResource's `financials` key and this module's README.
  * `opening_balance` IS stored because it is a real one-time input at
  * party creation, not a running total.
  */
@@ -50,5 +53,17 @@ class Party extends Model
     public function scopeSubcontractors($query)
     {
         return $query->where('type', 'subcontractor');
+    }
+
+    // Phase 6 (Modules/Accounting) — see App\Services\PartyFinancialsService
+    // for how these combine into total_bill/paid/advance/due/balance.
+    public function bills()
+    {
+        return $this->hasMany(PartyBill::class);
+    }
+
+    public function vouchers()
+    {
+        return $this->hasMany(Voucher::class);
     }
 }

@@ -25,9 +25,14 @@ Phase 5).
 
 ## Depends on / depended on by
 
-- Depends on: Auth module (`auth:api` guard).
+- Depends on: Auth module (`auth:api` guard); Modules/Accounting (Phase
+  6) for `PartyResource.financials` and the `bills()`/`vouchers()`
+  relations — a deliberate exception to the usual "later modules depend
+  on earlier ones" direction, same precedent as Modules/Production ↔
+  Modules/Subcontract's two-way `CutTicket` ↔ `SubcontractOrder`
+  reference.
 - Depended on by: Order (`party_id`, buyer), Modules/Subcontract (Phase 5,
-  subcontractor party), Modules/Accounting (Phase 6, vouchers/ledger
+  subcontractor party), Modules/Accounting (Phase 6, vouchers/bills
   reference a party).
 
 ## Known gaps (deliberate, not oversights)
@@ -38,17 +43,18 @@ Phase 5).
   exist, but no external-facing login in v1"). This table has no
   `password` column on purpose — `email`/`phone` here are plain contact
   fields, nothing more.
-- **No `total_bill`/`advance`/`paid`/`due`/`balance` columns.** PRD v1
-  §6.3 lists these as "System-computed". sdd.md §5 already establishes
-  the rule that a running total should be computed from a movement
-  ledger, not stored as a column that can drift — the same principle
-  applies here to money as it does to stock. Those figures depend on
-  Modules/Accounting vouchers (Phase 6) and Order values (this phase);
-  they'll be added as a computed summary (e.g. `GET
-  /api/v1/parties/{party}/summary`) once vouchers exist, not before.
-  `opening_balance` is the one exception — it's a real one-time input
-  captured at party creation, not a running total, so it's a stored
-  column.
+- **No `total_bill`/`advance`/`paid`/`due`/`balance` columns** — closed
+  as of Phase 6. PRD v1 §6.3 lists these as "System-computed"; sdd.md §5
+  already establishes the rule that a running total should be computed
+  from a movement ledger, not stored as a column that can drift — same
+  principle applies here to money as it does to stock. These are now
+  returned as `PartyResource`'s `financials` key, computed live by
+  `Modules\Accounting\App\Services\PartyFinancialsService::summarize()`
+  from Accounting's `PartyBill`/`Voucher` ledgers — see
+  Modules/Accounting/README.md for exactly how each figure is defined.
+  `opening_balance` remains the one exception — it's a real one-time
+  input captured at party creation, not a running total, so it's a
+  stored column.
 - Image upload is validated server-side by MIME type and file size
   (never the client-sent extension) and stored on the `local` disk
   outside the public web root (sdd.md §8) — there is no public URL for

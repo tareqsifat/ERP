@@ -152,15 +152,48 @@ on, especially given the traceability and money-touching modules.
 
 ## Phase 6 — Accounting & HRM (v1 PRD scope, largely unchanged)
 
-- [ ] Bank Accounts, Cash in Hand, Cheques
-- [ ] Income/Expense categories
-- [ ] Credit/Debit Vouchers (make sure Subcontractor party type flows
-      through here correctly, not just Buyer/Supplier)
-- [ ] Monthly Transactions, Party Ledger, Daily Cashbook
-- [ ] Party Due List (should now show Buyer/Supplier/Subcontractor
-      tabs — confirm subcontractor dues actually surface here)
-- [ ] Loss & Profit
-- [ ] HRM: Designations, Employees, Salaries
+- [x] Bank Accounts, Cash in Hand, Cheques. Backend done
+      (`Modules/Accounting`): `BankAccount`/`BankTransaction`,
+      `CashTransaction` (single pool), `Cheque` (Passed/Unused,
+      `ChequeService::markPassed()` is the one place a cheque moves the
+      bank ledger). Balances are always `SUM(signed amount)` over the
+      ledger tables (sdd.md §5), never stored columns.
+- [x] Income/Expense categories. `AccountingCategory` (one table,
+      `kind` discriminates), validated to match `Voucher.type` on create.
+- [x] Credit/Debit Vouchers (make sure Subcontractor party type flows
+      through here correctly, not just Buyer/Supplier). `Voucher` +
+      `VoucherService::record()` — `party_id` accepts any Party
+      regardless of `type`, so Subcontractor vouchers work identically to
+      Buyer/Supplier ones; confirmed no type-specific branching exists
+      that would exclude subcontractors.
+- [x] Monthly Transactions, Party Ledger, Daily Cashbook.
+      `TransactionController` (daily rollup by date+type),
+      `PartyLedgerController` (also serves Party Due List — see below),
+      `CashbookController` (date-ranged register + running summary panel).
+- [x] Party Due List (should now show Buyer/Supplier/Subcontractor
+      tabs — confirm subcontractor dues actually surface here).
+      `GET /party-ledger?type=` filters by any Party type including
+      `subcontractor` — same endpoint as Party Ledger (documented as a
+      deliberate merge in Accounting/README.md, PRD's two pages are the
+      same underlying data). This is also what closes Modules/Party's
+      long-deferred "Known gap": `PartyResource.financials` now returns
+      real total_bill/paid/advance/due/balance via
+      `PartyFinancialsService::summarize()`.
+- [x] Loss & Profit. `LossProfitController` + `LossProfitService` —
+      year-filterable, nets all Credit vs. Debit vouchers for the year.
+- [x] HRM: Designations, Employees, Salaries. Backend done
+      (`Modules/Hrm`): `Designation`, `Employee`, `SalaryPayment` (one row
+      per employee+month, `paid_amount` incremented via "Pay Salary",
+      `due_amount` a computed accessor). Deliberately NOT attendance-based
+      — PRD v2 §7 explicitly flags attendance-based payroll as Out of
+      Scope for v1/v2; flat salary pay/due tracking only, per PRD v1
+      §3.11/§7.5.
+      `AccountingModuleTest`/`HrmModuleTest` cover both modules — written
+      but not run against a real DB (no composer install/MySQL in this
+      sandbox, same caveat as every phase since Phase 4).
+- [ ] Manually run through Accounting + HRM end-to-end in the UI.
+      Blocked on the Phase 6 frontend (in progress) and on a real backend
+      run (composer install/MySQL unavailable in this sandbox).
 
 ## Phase 7 — Reporting & Settings
 

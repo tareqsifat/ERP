@@ -53,14 +53,30 @@ async function handleLogout() {
 
     <div class="flex flex-1 flex-col">
       <header class="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
-        <span class="text-sm text-gray-500">{{ auth.user?.name }}</span>
-        <button
-          type="button"
-          class="rounded bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
-          @click="handleLogout"
+        <router-link
+          v-if="router.hasRoute('profile.index')"
+          :to="{ name: 'profile.index' }"
+          class="text-sm text-gray-500 hover:text-brand-700 hover:underline"
         >
-          Log out
-        </button>
+          {{ auth.user?.name }}
+        </router-link>
+        <span v-else class="text-sm text-gray-500">{{ auth.user?.name }}</span>
+        <div class="flex items-center gap-2">
+          <router-link
+            v-if="router.hasRoute('profile.index')"
+            :to="{ name: 'profile.index' }"
+            class="rounded px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+          >
+            My Profile
+          </router-link>
+          <button
+            type="button"
+            class="rounded bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
+            @click="handleLogout"
+          >
+            Log out
+          </button>
+        </div>
       </header>
       <main class="flex-1 p-6">
         <slot />

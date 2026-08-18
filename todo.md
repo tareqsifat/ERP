@@ -212,9 +212,52 @@ on, especially given the traceability and money-touching modules.
 
 ## Phase 7 — Reporting & Settings
 
-- [ ] Report suite (financial + operational + the new traceability
-      lookup by serial)
-- [ ] Currency/Notification/System/Company settings
+- [x] Report suite (financial + operational + the new traceability
+      lookup by serial). Backend: `Modules/Report` (no tables of its
+      own — read-only aggregates over other modules' data).
+      `App\Services\ReportService` covers Sales/Order, Production,
+      Stock, Subcontract, and Party Ledger reports; `cashbook()`
+      delegates to Modules/Accounting's already-built
+      `CashbookController` instead of duplicating the running-summary
+      computation. `App\Services\TraceabilityService::traceBySerial()`
+      is the seventh type — walks Piece Serial → Bundle → Cut Ticket
+      (+ inward Subcontract Order tag) → Order → every Finished Goods
+      Movement for that exact piece, per the "friendlier UI on top of
+      the same query" note left in
+      `Modules/Production/App/Http/Controllers/PieceSerialController`'s
+      docblock. All seven behind one `report.view` gate
+      (`Modules/Report/routes/api.php`), tests in
+      `Modules/Report/tests/Feature/ReportModuleTest.php` (permission
+      grant/denial + a full traceability chain + 404 on unknown
+      serial), design rationale — including which "seven report
+      types" this build chose, since PRD v1 §3.14 never names all
+      seven — in `Modules/Report/README.md`. Frontend:
+      `frontend/src/modules/report` (tabbed `ReportSuiteView.vue`,
+      one tab per report type, date-range filter where applicable,
+      serial-lookup form for Traceability).
+- [x] Currency/Notification/System/Company settings. Backend:
+      `Modules/Setting` — a single key/value `settings` table
+      (`key` unique, `group` enum) rather than one table per tab,
+      `App\Services\SettingService` as the only writer
+      (`get()`/`set()`/`allGrouped()`), `SettingController` (`GET
+      /settings` open to any authenticated user, `PUT /settings`
+      bulk-upserts one group gated by `setting.manage`),
+      `database/seeders/SettingSeeder.php` seeds sane defaults (BDT
+      currency, Asia/Dhaka timezone, "Vishesh Textiles" company name)
+      and is now called from the top-level `DatabaseSeeder`. Tests in
+      `Modules/Setting/tests/Feature/SettingModuleTest.php`. My
+      Profile (PRD v1 §3.16/§4.14) needed no new backend work — `GET
+      /auth/me` and `PATCH /users/me` already existed from Phase 2 —
+      just a new `frontend/src/modules/user/views/ProfileView.vue`
+      plus a `profile.index` route linked from the top-bar user menu
+      in `AppLayout.vue` (My Profile isn't a sidebar item per PRD).
+      Frontend: `frontend/src/modules/setting` (tabbed
+      `SettingsView.vue`, read-only unless `setting.manage`).
+      `npm run build` and `npm test -- --run` both pass (19 files / 61
+      tests).
+- [ ] Manually run through Reports + Settings + My Profile in the UI.
+      Blocked on a real backend run — no composer install/MySQL in
+      this sandbox (same caveat as every phase since Phase 4).
 
 ## Phase 8 — Security pass
 

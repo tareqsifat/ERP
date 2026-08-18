@@ -9,4 +9,7 @@ export default {
   list(params = {}) {
     return api.get('/users', { params })
   },
+  updateMe(payload) {
+    return api.patch('/users/me', payload)
+  },
 }

@@ -1,0 +1,11 @@
+{
+    "name": "FinishedGoods",
+    "alias": "finished-goods",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\FinishedGoods\\App\\Providers\\FinishedGoodsServiceProvider"
+    ],
+    "files": []
+}

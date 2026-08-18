@@ -1,0 +1,11 @@
+{
+    "name": "Hrm",
+    "alias": "hrm",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Hrm\\App\\Providers\\HrmServiceProvider"
+    ],
+    "files": []
+}

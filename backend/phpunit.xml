@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+        <testsuite name="Modules">
+        <directory>Modules/Auth/tests/Feature</directory>
+        <directory>Modules/Auth/tests/Unit</directory>
+        <directory>Modules/User/tests/Feature</directory>
+        <directory>Modules/User/tests/Unit</directory>
+        <directory>Modules/Party/tests/Feature</directory>
+        <directory>Modules/Party/tests/Unit</directory>
+        <directory>Modules/Order/tests/Feature</directory>
+        <directory>Modules/Order/tests/Unit</directory>
+        <directory>Modules/Booking/tests/Feature</directory>
+        <directory>Modules/Booking/tests/Unit</directory>
+        <directory>Modules/Budgeting/tests/Feature</directory>
+        <directory>Modules/Budgeting/tests/Unit</directory>
+        <directory>Modules/Costing/tests/Feature</directory>
+        <directory>Modules/Costing/tests/Unit</directory>
+        <directory>Modules/Sampling/tests/Feature</directory>
+        <directory>Modules/Sampling/tests/Unit</directory>
+        <directory>Modules/Shipment/tests/Feature</directory>
+        <directory>Modules/Shipment/tests/Unit</directory>
+        <directory>Modules/Location/tests/Feature</directory>
+        <directory>Modules/Location/tests/Unit</directory>
+        <directory>Modules/RawMaterial/tests/Feature</directory>
+        <directory>Modules/RawMaterial/tests/Unit</directory>
+        <directory>Modules/Production/tests/Feature</directory>
+        <directory>Modules/Production/tests/Unit</directory>
+        <directory>Modules/FinishedGoods/tests/Feature</directory>
+        <directory>Modules/FinishedGoods/tests/Unit</directory>
+        <directory>Modules/Subcontract/tests/Feature</directory>
+        <directory>Modules/Subcontract/tests/Unit</directory>
+        <directory>Modules/Accounting/tests/Feature</directory>
+        <directory>Modules/Accounting/tests/Unit</directory>
+        <directory>Modules/Hrm/tests/Feature</directory>
+        <directory>Modules/Hrm/tests/Unit</directory>
+        <directory>Modules/Report/tests/Feature</directory>
+        <directory>Modules/Report/tests/Unit</directory>
+        <directory>Modules/Setting/tests/Feature</directory>
+        <directory>Modules/Setting/tests/Unit</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>app</directory>
+            <directory>Modules/*/App</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="BROADCAST_CONNECTION" value="null"/>
+        <env name="CACHE_STORE" value="array"/>
+        <env name="DB_CONNECTION" value="sqlite"/>
+        <env name="DB_DATABASE" value=":memory:"/>
+        <env name="DB_URL" value=""/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="PULSE_ENABLED" value="false"/>
+        <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="NIGHTWATCH_ENABLED" value="false"/>
+    </php>
+</phpunit>

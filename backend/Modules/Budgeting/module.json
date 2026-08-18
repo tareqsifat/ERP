@@ -1,0 +1,11 @@
+{
+    "name": "Budgeting",
+    "alias": "budgeting",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Budgeting\\App\\Providers\\BudgetingServiceProvider"
+    ],
+    "files": []
+}

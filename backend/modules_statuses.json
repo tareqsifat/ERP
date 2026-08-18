@@ -1,0 +1,20 @@
+{
+    "Auth": true,
+    "User": true,
+    "Party": true,
+    "Order": true,
+    "Booking": true,
+    "Budgeting": true,
+    "Costing": true,
+    "Sampling": true,
+    "Shipment": true,
+    "Location": true,
+    "RawMaterial": true,
+    "Production": true,
+    "FinishedGoods": true,
+    "Subcontract": true,
+    "Accounting": true,
+    "Hrm": true,
+    "Report": true,
+    "Setting": true
+}

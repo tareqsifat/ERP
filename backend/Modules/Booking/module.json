@@ -1,0 +1,11 @@
+{
+    "name": "Booking",
+    "alias": "booking",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Booking\\App\\Providers\\BookingServiceProvider"
+    ],
+    "files": []
+}

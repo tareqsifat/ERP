@@ -1,0 +1,11 @@
+{
+    "name": "Sampling",
+    "alias": "sampling",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Sampling\\App\\Providers\\SamplingServiceProvider"
+    ],
+    "files": []
+}

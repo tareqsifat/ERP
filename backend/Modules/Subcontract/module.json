@@ -1,0 +1,11 @@
+{
+    "name": "Subcontract",
+    "alias": "subcontract",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Subcontract\\App\\Providers\\SubcontractServiceProvider"
+    ],
+    "files": []
+}

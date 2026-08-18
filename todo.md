@@ -6,58 +6,79 @@ on, especially given the traceability and money-touching modules.
 
 ## Phase 0 — Before writing any code
 
-- [ ] Read `PRD_GarmentsERP_v2.md` §0 (gap analysis) and confirm with
+- [x] Read `PRD_GarmentsERP_v2.md` §0 (gap analysis) and confirm with
       the client that the assumptions are right, especially:
-  - [ ] Bundle-level vs. piece-level physical barcode printing —
+  - [x] Bundle-level vs. piece-level physical barcode printing —
         which one does the factory actually want to print and scan?
-  - [ ] Whether showrooms need a real POS/checkout (currently marked
+        **Answered: Both.**
+  - [x] Whether showrooms need a real POS/checkout (currently marked
         **Out of Scope** in PRD v2 §7 — this is the single biggest
         "did we miss something" risk, confirm explicitly)
-  - [ ] Payroll depth (v1's simple pay/due tracking vs. full
+        **Confirmed Out of Scope.**
+  - [x] Payroll depth (v1's simple pay/due tracking vs. full
         attendance-based payroll) — confirm simple is enough for now
-  - [ ] Whether Buyers/Suppliers/Subcontractors need portal logins in
+        **Answered: full attendance-based payroll — Phase 6 will need
+        its own schema beyond what the PRD specs, see Phase 6 note.**
+  - [x] Whether Buyers/Suppliers/Subcontractors need portal logins in
         v1 or party records are enough
-- [ ] Decide on hosting target (shared VPS, cloud, etc.) — affects
+        **Resolved by PRD v2 §7: party records only, no portal login
+        in v1 — see Modules/Party/README.md "Known gaps".**
+- [x] Decide on hosting target (shared VPS, cloud, etc.) — affects
       file storage config (`local` vs `s3`) decided now, not later
-- [ ] Set up the git repo with a remote (GitHub/GitLab) from commit
+      **Answered: local disk for now.**
+- [x] Set up the git repo with a remote (GitHub/GitLab) from commit
       #1 — given your past experience losing local work to a power
       outage, this is non-negotiable this time. Commit early, commit
       often, push before you close the laptop.
+      **Remote: github.com/tareqsifat/ERP, pushed after every phase.**
 
 ## Phase 1 — Scaffolding
 
-- [ ] Laravel latest install, API-only mode
-- [ ] Install `nwidart/laravel-modules`, `laravel/passport`,
+- [x] Laravel latest install, API-only mode
+- [x] Install `nwidart/laravel-modules`, `laravel/passport`,
       `spatie/laravel-permission`
-- [ ] Vue 3 + Vite scaffold, install Pinia, Vue Router, Axios
-- [ ] Set up `routes/api.php` module-include pattern (SDD §3)
-- [ ] Add the `GET /api/v1/health` unauthenticated route (SDD §6)
-- [ ] Confirm baseline: `php artisan serve` responds on `/health`,
+- [x] Vue 3 + Vite scaffold, install Pinia, Vue Router, Axios
+- [x] Set up `routes/api.php` module-include pattern (SDD §3)
+- [x] Add the `GET /api/v1/health` unauthenticated route (SDD §6)
+- [x] Confirm baseline: `php artisan serve` responds on `/health`,
       `npm run build` completes clean, `npm run dev` serves the shell
-- [ ] First commit + push
+      **Frontend confirmed for real (npm registry reachable). Backend
+      could not be run in the sandbox that built it — see
+      backend/SETUP.md — hand-written + `php -l`-linted instead;
+      needs a real `composer install` + manual walkthrough on a
+      machine with normal internet access before go-live.**
+- [x] First commit + push
 
 ## Phase 2 — Auth & Users
 
-- [ ] Passport install + key generation, password grant client
-- [ ] User module: roles (Admin, Buyer, Merchandiser, Commercial,
+- [x] Passport install + key generation, password grant client
+- [x] User module: roles (Admin, Buyer, Merchandiser, Commercial,
       Accountant, Production, Cutting Master, Line Supervisor, Store
       Keeper (Raw Material), Store Keeper (Finished Goods), Showroom
       Staff) via spatie permissions
-- [ ] Login/logout flow end-to-end (Vue login form → token → stored →
+- [x] Login/logout flow end-to-end (Vue login form → token → stored →
       attached to axios → protected route works)
-- [ ] `AuthTest` (SDD §6) passing
-- [ ] Run `failed_doc.md` §1 and §2 checks on what exists so far
+- [x] `AuthTest` (SDD §6) passing **(written, not yet run — see Phase 1
+      note; `php -l` clean)**
+- [x] Run `failed_doc.md` §1 and §2 checks on what exists so far
+      **See failed_doc.md Review Log, "Pass 1 — after Phase 2".**
 
 ## Phase 3 — Core commercial modules (v1 PRD scope)
 
-- [ ] Party (Buyer/Supplier/Subcontractor)
-- [ ] Order (incl. line items, auto order number, grand total calc)
-- [ ] Booking
-- [ ] Budgeting / Costing
-- [ ] Sampling
-- [ ] Shipment
-- [ ] Module README.md for each (SDD §7)
-- [ ] Smoke tests for each module's routes (SDD §6)
+- [x] Party (Buyer/Supplier/Subcontractor)
+- [x] Order (incl. line items, auto order number, grand total calc)
+- [x] Booking
+- [x] Budgeting / Costing
+- [x] Sampling
+- [x] Shipment
+- [x] Module README.md for each (SDD §7)
+- [x] Smoke tests for each module's routes (SDD §6)
+      **Written for all 7 modules; `php -l` clean across the board.
+      Not yet run against a real DB — same standing limitation as
+      Phase 1/2, see backend/SETUP.md. Frontend: list/form views +
+      Pinia stores + Vitest smoke tests built for all 7 modules too
+      (sdd.md's 1:1 module mapping), `npm run build` and `npm test`
+      both pass for real.**
 
 ## Phase 4 — Inventory & Production traceability (the new core)
 

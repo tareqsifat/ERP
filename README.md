@@ -49,3 +49,14 @@ frontend/   Vue 3 + Vite admin SPA (Pinia, Vue Router, Axios, Tailwind)
 ## Build status
 
 Tracked phase-by-phase per `todo.md`. See git log for phase commits.
+
+- **Phase 0–2** — done (scaffolding, Auth & Users).
+- **Phase 3** — done: Party, Order, Booking, Budgeting, Costing,
+  Sampling, Shipment — backend (models, migrations, controllers,
+  requests, resources, routes, Pest smoke tests, per-module READMEs)
+  and frontend (Pinia stores, Vue list/form views, Vue Router routes,
+  Vitest smoke tests) for all 7 modules. `npm run build` and
+  `npm test` pass for real; backend is `php -l`-lint-clean but still
+  awaiting its first real `composer install` — see
+  `backend/SETUP.md`.
+- **Phase 4 onward** — not started yet.

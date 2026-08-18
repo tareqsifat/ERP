@@ -102,11 +102,15 @@ on, especially given the traceability and money-touching modules.
       cut → assign to line → sew → QC pass → appears in Finished
       Goods → transfer to a showroom → confirm receipt. Screenshot
       or note each step. **Blocked on the same sandbox limitation —
-      needs a real `composer install` + running MySQL, see
-      backend/SETUP.md. Frontend views for this phase (Cutting,
-      Sewing/QC, Machine/Line register, Finished Goods, Stock
-      Transfer, Locations) are built; walk through once the backend
-      can actually run.**
+      needs a real `composer install` + running MySQL/backend, see
+      backend/SETUP.md. Frontend is built and ready for this walkthrough:
+      Locations + Stock Transfer (`frontend/src/modules/location`),
+      Raw Material + Purchase Orders (`.../raw-material`), Cutting +
+      Sewing/QC + Machine-Line register + Traceability lookup
+      (`.../production`), Finished Goods Inventory
+      (`.../finished-goods`) — `npm run build` and `npm test` both
+      pass for real (29 tests, 13 files). Do this walkthrough as soon
+      as the backend can run.**
 
 ## Phase 5 — Subcontracting
 

@@ -191,9 +191,24 @@ on, especially given the traceability and money-touching modules.
       `AccountingModuleTest`/`HrmModuleTest` cover both modules — written
       but not run against a real DB (no composer install/MySQL in this
       sandbox, same caveat as every phase since Phase 4).
+- [x] Frontend built: `frontend/src/modules/accounting` (Bank Accounts
+      +deposit/withdraw, Cash +increase/reduce, Cheques +mark-passed,
+      shared `CategoryView`/`VoucherView` components parameterized by
+      `kind`/`type` route props for Income/Expense and Credit/Debit
+      respectively, Monthly Transactions, Party Ledger with drill-down
+      +Add Bill, Daily Cashbook with running summary panel, Party Due
+      List, Loss & Profit) and `frontend/src/modules/hrm`
+      (Designations, Employees, Salaries List with Open Month/Pay Salary
+      actions). No `attendance.index` route/view — deliberately out of
+      scope, and the sidebar's `router.hasRoute()` filter just omits
+      that pre-scaffolded nav item until/unless it's ever built.
+      `npm run build` and `npm test -- --run` both pass (16 files / 53
+      tests).
 - [ ] Manually run through Accounting + HRM end-to-end in the UI.
-      Blocked on the Phase 6 frontend (in progress) and on a real backend
-      run (composer install/MySQL unavailable in this sandbox).
+      Blocked on a real backend run — no composer install/MySQL in this
+      sandbox (same caveat as every phase since Phase 4); the frontend
+      and backend code paths are both in place and unit/feature-tested,
+      just never exercised together against a live API.
 
 ## Phase 7 — Reporting & Settings
 

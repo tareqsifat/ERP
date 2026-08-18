@@ -134,10 +134,21 @@ on, especially given the traceability and money-touching modules.
       (ships via the existing `shipped` status + posts job_work_income),
       `SubcontractInwardModuleTest` covering the full QC→dispatch-back
       chain + permission-denied — written but not run against a real DB.
+- [x] Frontend built (`frontend/src/modules/subcontract`): `api.js`/
+      `store.js`/`routes.js` + `SubcontractOutwardView` (create order,
+      issue pieces, issue raw material, return/write-off pieces),
+      `SubcontractInwardView` (create order, dispatch back), and
+      `SubcontractLedgerView` (per-order ledger + manual payment entry).
+      Production's `CuttingView` gained an optional "Inward Subcontract
+      Order" field so a Cut Ticket can be tagged from the existing
+      Cutting screen, matching the backend's design (the Cut Ticket is
+      the real entry point for inward job-work). `npm run build` and
+      `npm test -- --run` both pass (14 files / 35 tests).
 - [ ] Manually run one outward and one inward subcontract cycle
-      end-to-end in the UI. Blocked on the Phase 5 frontend (in progress)
-      and on a real backend run (composer install/MySQL unavailable in
-      this sandbox).
+      end-to-end in the UI. Blocked on a real backend run — no
+      composer install/MySQL in this sandbox (same caveat as Phase 4);
+      the frontend and backend code paths are both in place and unit/
+      feature-tested, just never exercised together against a live API.
 
 ## Phase 6 — Accounting & HRM (v1 PRD scope, largely unchanged)
 

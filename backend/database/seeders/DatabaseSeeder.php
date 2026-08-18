@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Modules\Location\Database\Seeders\LocationSeeder;
+use Modules\Setting\Database\Seeders\SettingSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -17,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             AdminUserSeeder::class,
             LocationSeeder::class,
+            SettingSeeder::class,
         ]);
 
         // Phase 9 (todo.md) adds a dedicated DemoDataSeeder here for the

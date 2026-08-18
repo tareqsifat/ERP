@@ -290,3 +290,209 @@ to the Phase-3/4/8 passes noted below — not marked FALSE by omission.
 (new), `bootstrap/app.php` (`auth.api` middleware group),
 `Modules/Auth/routes/api.php` + `Modules/User/routes/api.php` (switched
 to `auth.api`), `app/Models/User.php` (`is_active` added to `#[Fillable]`).
+
+---
+
+#### Pass 2 — after Phase 4 (Inventory & Production traceability), scope: §1 (spot-check only), §2, §7, §9 (partial), §10 (spot-check)
+
+Traced against the actual code added in Phase 3 (Party, Order, Booking,
+Budgeting, Costing, Sampling, Shipment) and Phase 4 (Location,
+RawMaterial, Production, FinishedGoods, Stock Transfer). §3/§4/§5/§6/§8
+are unchanged from Pass 1 (no file uploads, no `include`/remote-URL code
+paths, no raw SQL string concatenation, no CORS/session config touched,
+no secrets added) — not re-audited line-by-line this pass, just spot-
+checked for regressions and found none.
+
+**§1 (spot-check)** — no new auth code this phase; `auth.api` middleware
+is applied on every new module's routes (`Location`, `RawMaterial`,
+`Production`, `FinishedGoods`), verified by reading each `routes/api.php`
+directly rather than assuming. Still **FALSE** across the board.
+
+**§2 Authorization / Access Control (IDOR & Privilege Escalation)**
+
+1. `{id}` endpoints don't verify the caller may access that specific
+   record — **partially TRUE, now FIXED for the item sdd.md §4 actually
+   specifies.** sdd.md §4 is explicit that location-scoping ("Showroom
+   Staff sees only their showroom") is enforced via `user.location_id`
+   in policies/queries, not the role/permission layer — and this was
+   flagged as a deferred Phase-4 re-check in Pass 1. It was missing:
+   `StockTransferController` had no location check at all (a Showroom
+   Staff user could dispatch/receive/view any location's transfers by
+   ID), and `FinishedGoodsController::stock()`/`movements()` trusted a
+   client-supplied `location_id` filter instead of the caller's own.
+   Fixed: `StockTransferController::guardLocationScope()` (403 on
+   `show`/`receive` for a transfer that doesn't touch the caller's
+   location; `index()` query-scoped; `store()` rejects dispatching from
+   a location that isn't the caller's own when `location_id` is set) and
+   `FinishedGoodsController` now computes `$scopedLocationId = $request
+   ->user()->location_id ?: $request->integer('location_id') ?: null`
+   — a scoped user's own location always wins over whatever the request
+   asks for. Covered by `StockTransferModuleTest::"showroom staff can
+   only see and receive stock transfers bound for their own showroom"`
+   and `FinishedGoodsModuleTest::"a showroom staff user only sees stock
+   for their own location, even if another is requested"`. Order/Party/
+   Booking/etc. have **no** per-record ownership restriction (e.g. a
+   Merchandiser can view another Merchandiser's Order) — this is
+   deliberate, not an oversight: nothing in the PRD describes "my orders
+   only" visibility, every relevant role's permission grant in
+   `RoleSeeder` is already flat or `location.view`-style module-wide,
+   and the small-team nature of this ERP (client is one factory with a
+   handful of named roles, not a multi-tenant platform) makes row-level
+   ownership scoping outside the one case sdd.md actually calls out
+   (`location_id`) an unrequested feature, not a security gap. Flagging
+   this reasoning explicitly rather than silently deciding it.
+2. Role/permission checks exist only on the frontend — **FALSE**. Every
+   route added this phase (`Location`, `RawMaterial`, `Production`,
+   `FinishedGoods`) is gated server-side with `permission:*` middleware;
+   verified by reading each `routes/api.php`, not assumed. Covered by a
+   "user without permission X gets 403" test in every new module's test
+   file (`ProductionRegisterTest`, `CuttingModuleTest`,
+   `SewingQcModuleTest`, `FinishedGoodsModuleTest`,
+   `StockTransferModuleTest`, `PurchaseOrderModuleTest`).
+3. Mass assignment possible — **was TRUE (5 latent instances), now
+   FIXED.** Already logged in detail in this session's working notes:
+   `Model::preventSilentlyDiscardingAttributes(true)` was added globally
+   in `AppServiceProvider::boot()`, which surfaced (via a full
+   `::create(`/`->create([`/`new Model([` call-site audit against every
+   model's `#[Fillable]` list, not left to be found by accident at
+   runtime) 5 real bugs: `OrderLineItem.total_price`,
+   `BookingLineItem.total_value`, `Budget.total_value`,
+   `Costing.total_cost` (all Phase 3, all missing from `#[Fillable]`
+   despite being written server-side on every create), and
+   `RawMaterialPurchaseOrderItem.total_price` (Phase 4, caught before
+   ever being committed). In every case the original code's own comment
+   claimed excluding the field from `#[Fillable]` was "what stops a
+   client from setting the total" — false: the real defense is that the
+   FormRequest never accepts that field from the client in the first
+   place, so excluding it from `#[Fillable]` only broke the legitimate
+   server-side write. Fixed by adding each field to its model's
+   `#[Fillable]`, not by loosening the guard.
+4. Self role-escalation — **FALSE**, unchanged from Pass 1 (no new
+   profile/role-adjacent endpoints this phase).
+5. Financial write endpoints reachable by read-only roles — **N/A,
+   still not implemented** (Modules/Accounting is Phase 6). Re-check
+   then. Phase 4's closest equivalent — stock-affecting writes — *is*
+   in scope here and is covered under §7 below instead, since
+   "financial" in the original checklist item means Accounting
+   specifically.
+
+**§7 Business-Logic / Traceability Integrity** *(the core of this
+phase's actual purpose)*
+
+1. A Piece Serial can be generated more than once — **FALSE**.
+   `piece_serials.serial` is `string()->unique()` at the DB level (see
+   migration), not just a uniqueness check in `CuttingService`; a
+   duplicate insert would throw a DB-level unique-constraint exception,
+   not silently succeed. `CuttingService::finalize()` also has its own
+   idempotency guard (rejects finalizing the same Cut Ticket twice with
+   a 422 before generating anything), which is the actual path that
+   would otherwise produce colliding serials. Covered by
+   `CuttingModuleTest::"...unique serials per piece"` and the
+   idempotency test.
+2. Finished Goods stock can go negative without blocking/flagging —
+   **FALSE for the one write path that can move stock without an
+   existing physical unit (Stock Transfer dispatch).**
+   `StockTransferService::dispatch()` calls `FinishedGoodsStockService
+   ::stockOf()` and throws a 422 `ValidationException` before posting
+   any movement if `quantity > $available`. QC intake (`+1`, always
+   backed by a real cut/sewn piece) and transfer receipt (bounded by
+   whatever was actually dispatched) can't independently create a
+   negative balance. Shipment's deduction call site is documented as
+   Phase-4-added wiring in `FinishedGoodsStockService`'s docblock but
+   the actual `Modules/Shipment` controller call to `::shipment()` was
+   **not** wired up this phase — **TRUE gap, tracked for the Phase 5/8
+   pass**: shipping can currently be recorded without checking Finished
+   Goods availability, since Shipment predates this ledger (Phase 3) and
+   wasn't revisited. Not fixed now because doing so correctly requires
+   deciding whether Shipment's existing `total_quantity` field should
+   decompose into per-style/color/size lines to match the ledger's key
+   — a schema question, not a one-line fix, and out of the "stock
+   quantities" ambiguity this project's instructions say to ask about
+   rather than guess. Flagging for the Phase 8 pass / a user decision
+   rather than silently deferring it again.
+3. Raw material stock can go negative silently — **TRUE, by deliberate
+   design, not a bug.** `RawMaterialStockService::issue()` posts a
+   negative movement unconditionally with no balance check (this is
+   pre-existing Phase 4 RawMaterial code, not something changed this
+   pass). PRD v2 only specifies reorder-level *alerts* for raw material
+   (`isBelowReorderLevel()`), never a hard block on issuing more than is
+   on hand — unlike Finished Goods, where blocking is justified by "you
+   physically cannot ship a unit that doesn't exist," raw material in a
+   real cutting floor is sometimes issued against a receipt that's
+   still in transit/paperwork, so a hard block would fight how the
+   client's floor actually operates. Documented here as an explicit,
+   reviewed decision rather than an unreviewed gap — revisit only if the
+   client explicitly asks for a hard stop instead of the reorder alert.
+4. A Stock Transfer can be "Received" for more than "Dispatched" — this
+   phase's design **intentionally allows it** but never silently: any
+   `quantity_received != quantity_dispatched` (including *over*-receipt)
+   sets `status = discrepancy` rather than `received`, and the ledger
+   records exactly what was actually received, not what was claimed
+   dispatched. **FALSE** as a silent-corruption risk; verified by
+   `StockTransferModuleTest::"receiving less than dispatched marks the
+   transfer as a discrepancy"`.
+5. An Outward Subcontract return recorded for more pieces than issued —
+   **N/A, not yet implemented** (Phase 5). Re-check then.
+6. Hard-delete of a parent record with financial/traceability children —
+   **FALSE**. Every new model this phase (`Location`, `RawMaterial`,
+   `RawMaterialStockMovement`'s parent PO, `CutTicket`, `Bundle`,
+   `PieceSerial`, `StockTransfer`) uses `SoftDeletes`; the two ledger
+   tables (`RawMaterialStockMovement`, `FinishedGoodsMovement`) have no
+   delete route at all — append-only, not even soft-deletable via the
+   API, matching sdd.md §5's "ledger is the source of truth."
+7. Race condition — two requests both pass a stock check and both
+   deduct the same unit — **FALSE for the sequence-number generators,
+   was TRUE for a different reason, now FIXED.** `PurchaseOrderNumber
+   Generator`/`ShipmentInvoiceNumberGenerator`/`StockTransferNumber
+   Generator` all use `lockForUpdate()` inside a `DB::transaction()`,
+   correctly serializing concurrent number generation. Separately found
+   (not a race condition, a plain constraint-ordering bug) while tracing
+   this: `ShipmentController::store()`, `PurchaseOrderController::store()`,
+   and this phase's new `StockTransferService::dispatch()` all called
+   `->save()` on the header row **before** `year`/`sequence_no` were
+   assigned — and both columns are `NOT NULL` with no default (see each
+   migration). Under strict SQL mode (MySQL's default, and enforced by
+   SQLite too) the *first* insert would fail outright, before the race-
+   safety logic ever mattered. Fixed in all three controllers/services
+   by computing the sequence first, then doing exactly one `save()` with
+   every NOT NULL column already populated — and the same bug, one level
+   removed, existed in the *factories* for these three models
+   (`ShipmentFactory`, `RawMaterialPurchaseOrderFactory`, and this
+   phase's new `StockTransferFactory`), which computed the sequence in
+   an `afterCreating()` callback that runs strictly after Laravel's
+   factory `create()` has already performed its own first insert. Fixed
+   by moving the sequence computation into each factory's `definition()`
+   instead. (`CutTicketFactory` does **not** have this bug despite
+   `CutTicket` deliberately excluding `status` from `#[Fillable]` —
+   Laravel's `Factory::make()` wraps model construction in
+   `Model::unguarded()`, which bypasses mass-assignment guarding
+   entirely for factory-built instances; verified this is real Laravel
+   behavior, not assumed, before ruling it a non-issue.)
+
+**§9/§10 (spot-check)** — no new dependencies added this phase
+(`bcmath` is a PHP extension, not a Composer package); every new
+paginated list endpoint caps `per_page` (`min((int) $request->integer
+('per_page', N), CAP)`) the same way Phase 2/3 endpoints do — verified
+by grep across every new controller, not assumed from the pattern
+existing elsewhere.
+
+**Fixes applied this pass:** `app/Providers/AppServiceProvider.php`
+(`preventSilentlyDiscardingAttributes`), `#[Fillable]` additions to
+`OrderLineItem`, `BookingLineItem`, `Budget`, `Costing`,
+`RawMaterialPurchaseOrderItem`; `Modules/Location/App/Http/Controllers
+/StockTransferController.php` (location-scoping guard) and
+`Modules/FinishedGoods/App/Http/Controllers/FinishedGoodsController.php`
+(location-scoping on `stock`/`movements`); sequence-before-save fix in
+`Modules/Shipment/App/Http/Controllers/ShipmentController.php`,
+`Modules/RawMaterial/App/Http/Controllers/PurchaseOrderController.php`,
+`Modules/Location/App/Services/StockTransferService.php`, and the
+matching factory fix in `ShipmentFactory`,
+`RawMaterialPurchaseOrderFactory`, `StockTransferFactory`.
+
+**Open item carried to Phase 5/8:** Shipment's Finished Goods deduction
+(`FinishedGoodsStockService::shipment()`) is not yet called from
+`Modules/Shipment` — shipping currently doesn't check or deduct
+Finished Goods stock. Needs a decision on whether `Shipment` should gain
+per-style/color/size line items to match the ledger's key, or deduct
+against `total_quantity` some other way — a stock-quantity-schema
+question, not guessed at here.

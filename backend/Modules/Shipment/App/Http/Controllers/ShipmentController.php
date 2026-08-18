@@ -46,12 +46,15 @@ class ShipmentController extends Controller
         $shipment = DB::transaction(function () use ($data) {
             $year = (int) now()->year;
 
-            $shipment = Shipment::create($data);
-
-            // Invoice number needs the year lock BEFORE it's assigned —
-            // see ShipmentInvoiceNumberGenerator docblock for why this
-            // can't be purely id-derived the way Order's order_no is.
+            // Sequence must be resolved and assigned BEFORE the first
+            // save() — `year`/`sequence_no` are NOT NULL columns with no
+            // default (see the shipments migration), so an initial
+            // Shipment::create($data) without them would fail the
+            // insert outright under strict SQL mode. One INSERT with
+            // every NOT NULL column already populated, not two.
             $sequence = ShipmentInvoiceNumberGenerator::nextFor($year);
+
+            $shipment = new Shipment($data);
             $shipment->year = $year;
             $shipment->sequence_no = $sequence;
             $shipment->invoice_no = ShipmentInvoiceNumberGenerator::format($year, $sequence);

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -17,6 +18,20 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Every model in this codebase declares its writable columns via
+        // #[Fillable(...)] (never $guarded = []) — Eloquent's DEFAULT
+        // behavior when a mass-assigned key isn't fillable is to silently
+        // drop it, not throw. That default almost bit us for real: Phase 4's
+        // Bundle/PieceSerial models were briefly built with no #[Fillable]
+        // at all (client-facing writes are intentionally blocked — see
+        // Modules/Production/README.md), which would have made
+        // create()/fill() calls from their own Services silently produce
+        // empty rows instead of erroring. Caught before it shipped, but the
+        // failure mode is exactly what failed_doc.md warns about, so: make
+        // it loud everywhere, permanently, not just where we happened to
+        // notice.
+        Model::preventSilentlyDiscardingAttributes(true);
+
         // The Password Grant is opt-in as of Passport 13 — without this,
         // Modules/Auth's AuthController would get a valid-looking 400
         // from /oauth/token no matter how correct the credentials are.

@@ -9,7 +9,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Costing\Database\Factories\CostingFactory;
 use Modules\Order\App\Models\Order;
 
-#[Fillable(['order_id', 'style', 'costed_quantity', 'average_unit_cost', 'status'])]
+// `total_cost` IS in #[Fillable] — see Order/App/Models/OrderLineItem.php's
+// docblock for why (Phase 4 correction). Real defense is that
+// Store/UpdateCostingRequest never validate a client-sent total_cost.
+#[Fillable(['order_id', 'style', 'costed_quantity', 'average_unit_cost', 'status', 'total_cost'])]
 class Costing extends Model
 {
     /** @use HasFactory<CostingFactory> */

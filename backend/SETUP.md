@@ -14,8 +14,12 @@ cd backend
 composer install
 ```
 
-Requires PHP ^8.3 with the `openssl`, `json`, `mbstring`, `pdo_mysql`
-extensions (standard on most PHP installs).
+Requires PHP ^8.3 with the `openssl`, `json`, `mbstring`, `pdo_mysql`,
+`bcmath` extensions (all standard on most PHP installs). `bcmath` is used
+by the arbitrary-precision decimal math in Modules/RawMaterial's stock
+ledger and PO receiving (`bcadd`/`bcsub`/`bccomp`/`bcmul`) — quantities
+there use 3 decimal places and float arithmetic isn't precise enough to
+trust for stock math.
 
 ## 2. Environment
 

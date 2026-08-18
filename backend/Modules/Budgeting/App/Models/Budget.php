@@ -10,11 +10,15 @@ use Modules\Budgeting\Database\Factories\BudgetFactory;
 use Modules\Order\App\Models\Order;
 
 /**
- * `total_value` is absent from #[Fillable] — always server-computed as
- * budgeted_quantity * average_unit_price (BudgetController), never
- * trusted from client input.
+ * `total_value` IS in #[Fillable] — see
+ * Order/App/Models/OrderLineItem.php's docblock for why (Phase 4
+ * correction). It's always server-computed as budgeted_quantity *
+ * average_unit_price in BudgetController before create()/fill(); the
+ * real defense against a client-sent total is that
+ * StoreBudgetRequest/UpdateBudgetRequest never validate that field at
+ * all, not this attribute list.
  */
-#[Fillable(['order_id', 'style', 'budgeted_quantity', 'average_unit_price', 'status'])]
+#[Fillable(['order_id', 'style', 'budgeted_quantity', 'average_unit_price', 'status', 'total_value'])]
 class Budget extends Model
 {
     /** @use HasFactory<BudgetFactory> */

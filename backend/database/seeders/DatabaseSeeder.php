@@ -19,11 +19,9 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             LocationSeeder::class,
             SettingSeeder::class,
+            // Self-guards against running in production (same pattern as
+            // AdminUserSeeder) — safe to always call here.
+            DemoDataSeeder::class,
         ]);
-
-        // Phase 9 (todo.md) adds a dedicated DemoDataSeeder here for the
-        // full Order -> Booking -> Cutting -> Sewing -> Finished Goods ->
-        // Shipment walkthrough chain, subcontract cycles, vouchers, and an
-        // Employee + Salary cycle.
     }
 }

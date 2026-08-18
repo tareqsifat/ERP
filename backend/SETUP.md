@@ -63,12 +63,26 @@ why the SPA doesn't call `/oauth/token` directly.
 php artisan db:seed
 ```
 
-This runs `PermissionSeeder` → `RoleSeeder` → `AdminUserSeeder`. The
-admin seeder **generates a random password and prints it once** —
+This runs, in order: `PermissionSeeder` → `RoleSeeder` →
+`AdminUserSeeder` → `LocationSeeder` → `SettingSeeder` →
+`DemoDataSeeder`.
+
+The admin seeder **generates a random password and prints it once** —
 copy it immediately, it is not stored anywhere in plaintext.
 `ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD` env vars override the
 defaults if you want a specific login for local dev. See failed_doc.md
 §8/§10 for why there's no fixed default password.
+
+`DemoDataSeeder` seeds a full, connected set of realistic-looking demo
+data (see `../user_usage_guide.md`) — one demo user per role, sample
+parties/raw materials/orders, and a complete Order → Booking → Cutting
+→ Sewing → QC → Finished Goods → Stock Transfer → Shipment chain, plus
+subcontract, accounting, and HRM cycles. It refuses to run in
+`APP_ENV=production` unless `DEMO_SEED_FORCE=1` is set — for a real
+client deployment, either leave it out entirely (run
+`php artisan db:seed --class=PermissionSeeder` etc. individually,
+skipping `DemoDataSeeder`) or just don't set `DEMO_SEED_FORCE` and let
+it self-skip.
 
 ## 5. Run it
 

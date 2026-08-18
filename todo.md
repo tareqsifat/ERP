@@ -308,17 +308,74 @@ on, especially given the traceability and money-touching modules.
 
 ## Phase 9 — Test data & usage guide
 
-- [ ] Build the seeder(s) described in `user_usage_guide.md` (create
-      that file once the above phases are stable — it needs real
-      routes/fields to reference accurately, don't write it too
-      early or it'll drift from the actual build)
-- [ ] Seed test data: at least one Order → Booking → Cutting →
+- [x] Build the seeder(s) described in `user_usage_guide.md`.
+      `backend/database/seeders/DemoDataSeeder.php` (new, ~560 lines):
+      seeds one demo user per role (10 roles, password `Demo@12345`,
+      Showroom Staff scoped to Showroom 1 via `location_id`), parties
+      (buyer/supplier/subcontractor), raw materials received in full
+      via two Purchase Orders (Cotton + Poly-Cotton Rib from Prime
+      Fabrics, Woven Label from Trimline), a full Order → Booking →
+      Cutting → Sewing → QC → Finished Goods chain, Stock Transfers to
+      all 3 showrooms (including one deliberate short-receipt to
+      demonstrate the Discrepancy path), a Shipment, both Outward and
+      Inward subcontract cycles, a set of accounting vouchers/cheques/
+      bank+cash movements, and a full Designation → Employee → Salary
+      Month → Payment HRM cycle. Built by calling the real
+      `App\Services\*`/Module Service classes (`CuttingService`,
+      `SewingService`, `QcService`, `StockTransferService`,
+      `Subcontract{Outward,Inward}Service`, `VoucherService`,
+      `ChequeService`, `SalaryService`) rather than raw `Model::create`,
+      so every sequence number and ledger posting is exactly as
+      self-consistent as data created through the real API. Guarded
+      against running in `production` unless `DEMO_SEED_FORCE=1` is
+      set (same pattern as `AdminUserSeeder`). Wired into
+      `database/seeders/DatabaseSeeder.php`'s `$this->call([...])`
+      chain (after `SettingSeeder`) and documented in
+      `backend/SETUP.md` §4. Caught and fixed 3 bugs in my own first
+      draft purely by manual code tracing (no composer install/MySQL
+      available to actually execute it in this sandbox): a dead
+      leftover code line, Poly-Cotton Rib going negative because the
+      original PO only received Cotton (fixed by refactoring into a
+      `receivePurchaseOrder()` helper called twice, receiving all 3
+      materials in full), and a missing NOT-NULL `order_id` on the
+      Inward Subcontract cycle's manually-constructed CutTicket (the
+      owning SubcontractOrder itself has a nullable `order_id` for
+      inward jobs, but CutTicket's own `order_id` column has no
+      `->nullable()` — fixed by reusing the demo Order's id).
+- [x] Seed test data: at least one Order → Booking → Cutting →
       Sewing → Finished Goods → Shipment chain, one Outward and one
       Inward subcontract, a handful of vouchers, one full Employee +
-      Salary cycle, all 4 locations populated
-- [ ] Walk through `user_usage_guide.md` yourself top to bottom before
+      Salary cycle, all 4 locations populated. All present in
+      `DemoDataSeeder.php` as described above — Main Store, all 3
+      Showrooms, and the Factory location are all populated/touched.
+- [x] Walk through `user_usage_guide.md` yourself top to bottom before
       handing it to the client — if a step doesn't work as written,
-      the guide is wrong, fix the guide (or the bug)
+      the guide is wrong, fix the guide (or the bug). Could not run
+      the live app in this sandbox, so this was done as a systematic
+      grep cross-check of every route path/permission name/role name
+      written in the guide against the real `routes.js` files,
+      `RoleSeeder.php`, and `PermissionSeeder.php`. Found and fixed:
+      every Accounting-section path was missing the real `/accounting/`
+      URL prefix (and `/cashes` was wrong — the real route is
+      `/accounting/cash`, no 's'); every HRM-section path was missing
+      the real `/hrm/` prefix; a reference to a `/productions`
+      "Production List" page that doesn't exist anywhere (traced to a
+      stale `productions.index` entry in `navConfig.js` with no
+      registered route — confirmed against PRD v1 §3.5/PRD v2 §3.18
+      that the standalone "Daily Production List" table was never
+      built as its own page), replaced with an honest "Known
+      limitation" note pointing to the Production Report tab and
+      Cutting/Sewing pages instead. Also added a missing mention of
+      the Locations List (`/locations`) and Machine Register
+      (`/machines`) pages the first draft omitted. Verified the §1
+      role/email/permission table against `RoleSeeder.php` line-by-
+      line (exact match) and the `setting.manage` permission
+      description against `PermissionSeeder.php` and
+      `Setting/routes/api.php` (exact match). Verified the "Showroom
+      Staff... scoped to Showroom 1 only" claim against
+      `StockTransferController::guardLocationScope()` and
+      `FinishedGoodsController::stock()`'s `location_id` scoping —
+      both confirmed accurate.
 
 ## Phase 10 — Handover
 

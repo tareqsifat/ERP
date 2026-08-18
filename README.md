@@ -59,4 +59,41 @@ Tracked phase-by-phase per `todo.md`. See git log for phase commits.
   `npm test` pass for real; backend is `php -l`-lint-clean but still
   awaiting its first real `composer install` — see
   `backend/SETUP.md`.
-- **Phase 4 onward** — not started yet.
+- **Phase 4** — done: Production traceability (Cutting → Sewing → QC),
+  Raw Material inventory & Purchase Orders, Locations & Stock
+  Transfer, Machines — backend + frontend, with the sequence-number
+  race-condition class of bug fixed and re-verified.
+- **Phase 5** — done: Finished Goods inventory, Subcontracting
+  (Outward and Inward, both fully traceable), Subcontractor Ledger.
+- **Phase 6** — done: Accounting suite (Bank, Cash, Cheques, Income/
+  Expense categories, Credit/Debit Vouchers, Monthly Transactions,
+  Party Ledger, Party Due List, Loss & Profit), HRM (Designations,
+  Employees, Salaries — flat monthly, no attendance tracking by
+  design per PRD v2 §7).
+- **Phase 7** — done: Report Suite (7 report types, reusing existing
+  module logic rather than duplicating it) and Settings (key-value
+  store, 4 tabs, `setting.manage`-gated).
+- **Phase 8** — done: full security pass against `failed_doc.md`'s
+  checklist via a 6-way parallel audit — fixed missing server-side
+  image re-encoding on upload, an unwired rate limiter, a
+  `DB::transaction()` regression around a sequence-number
+  `lockForUpdate()`, and a voucher/cheque party-mismatch gap. The
+  Shipment → Finished Goods stock deduction gap remains open by
+  deliberate choice (documented, not guessed — see `failed_doc.md`'s
+  Pass 3 entry and `user_usage_guide.md` §9 "Known limitations"); it
+  needs a real product decision (a Shipment line-item schema) rather
+  than an arbitrary fix.
+- **Phase 9** — done: `DemoDataSeeder` (a full, connected, realistic
+  demo dataset built by calling the real Service classes, not raw
+  `Model::create`) and [`user_usage_guide.md`](./user_usage_guide.md),
+  a client-facing walkthrough verified path-by-path against the
+  actual routes.
+- **Phase 10 (Handover)** — out of scope for this build; not
+  attempted.
+
+Backend note (unchanged since Phase 3): this backend was built in a
+sandboxed environment without Packagist access, so `composer install`
+has never actually been run against it — everything is `php -l`-lint-
+clean and carefully hand-traced, but run `composer install` and the
+test suite for real on the first machine that has internet access
+before going live. See `backend/SETUP.md`.

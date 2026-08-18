@@ -5,6 +5,7 @@ namespace Modules\Subcontract\App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Modules\Production\App\Http\Resources\CutTicketResource;
 use Modules\Production\App\Http\Resources\PieceSerialResource;
 use Modules\Subcontract\App\Http\Requests\IssueSubcontractPiecesRequest;
@@ -56,16 +57,28 @@ class SubcontractOrderController extends Controller
         // Sequence must be resolved and assigned BEFORE the first save() —
         // `year`/`sequence_no` are NOT NULL columns with no default (same
         // lesson as Shipment/RawMaterialPurchaseOrder/StockTransfer's
-        // identical pattern — see failed_doc.md Pass 2).
-        $year = (int) now()->year;
-        $sequence = SubcontractNumberGenerator::nextFor($year);
+        // identical pattern — see failed_doc.md Pass 2). AND that sequence
+        // fetch+save must be wrapped in a DB::transaction() — a bare
+        // lockForUpdate() outside a transaction commits (and releases its
+        // lock) immediately after the SELECT, giving two concurrent
+        // requests no protection at all against reading the same
+        // max(sequence_no) before either has inserted. This was a real
+        // regression caught in failed_doc.md Pass 3 — SubcontractNumberGenerator
+        // itself was correct, but this call site wasn't wrapped like every
+        // sibling controller's (Shipment/PurchaseOrder/StockTransfer) is.
+        $order = DB::transaction(function () use ($data, $request) {
+            $year = (int) now()->year;
+            $sequence = SubcontractNumberGenerator::nextFor($year);
 
-        $order = new SubcontractOrder($data);
-        $order->created_by = $request->user()->id;
-        $order->year = $year;
-        $order->sequence_no = $sequence;
-        $order->subcontract_no = SubcontractNumberGenerator::format($year, $sequence);
-        $order->save();
+            $order = new SubcontractOrder($data);
+            $order->created_by = $request->user()->id;
+            $order->year = $year;
+            $order->sequence_no = $sequence;
+            $order->subcontract_no = SubcontractNumberGenerator::format($year, $sequence);
+            $order->save();
+
+            return $order;
+        });
 
         return $this->created(new SubcontractOrderResource($order));
     }

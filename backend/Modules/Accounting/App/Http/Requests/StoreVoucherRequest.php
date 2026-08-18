@@ -5,6 +5,7 @@ namespace Modules\Accounting\App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Accounting\App\Models\AccountingCategory;
+use Modules\Accounting\App\Models\Cheque;
 
 class StoreVoucherRequest extends FormRequest
 {
@@ -50,6 +51,20 @@ class StoreVoucherRequest extends FormRequest
                 $expectedKind = $this->input('type') === 'credit' ? 'income' : 'expense';
                 if ($category && $category->kind !== $expectedKind) {
                     $validator->errors()->add('category_id', "A {$this->input('type')} voucher must use a {$expectedKind} category.");
+                }
+            }
+
+            // failed_doc.md §2 Pass 3: cheque_id/party_id were each only
+            // checked for existence, not for mutual coherence — a cheque
+            // issued against Party A could be attached to a voucher whose
+            // party_id is Party B. Not an authorization bypass (no
+            // ownership boundary exists between accounting records — any
+            // Accountant/Commercial can already touch any party/cheque by
+            // design) but a real data-integrity gap worth closing.
+            if ($this->filled('cheque_id') && $this->filled('party_id')) {
+                $cheque = Cheque::find($this->input('cheque_id'));
+                if ($cheque && $cheque->party_id && (int) $cheque->party_id !== (int) $this->input('party_id')) {
+                    $validator->errors()->add('cheque_id', 'This cheque was issued for a different party.');
                 }
             }
         });

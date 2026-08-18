@@ -75,3 +75,32 @@ test('admin can soft-delete a party', function () {
 
     $this->assertSoftDeleted('parties', ['id' => $party->id]);
 });
+
+// failed_doc.md §3 Pass 3: uploaded images are re-encoded server-side
+// (App\Services\ImageUploadService), not persisted as the client's raw
+// bytes. A stored, re-encoded JPEG should exist on disk under a random
+// (not client-supplied) filename, and be decodable as a real image.
+test('uploading a party image stores a re-encoded file under a random name, not the original bytes', function () {
+    actingAsRole('Admin');
+    \Illuminate\Support\Facades\Storage::fake('local');
+    $upload = \Illuminate\Http\UploadedFile::fake()->image('../../etc/passwd.png', 20, 20);
+
+    $response = $this->post('/api/v1/parties', [
+        'name' => 'Image Test Party',
+        'type' => 'buyer',
+        'image' => $upload,
+    ]);
+
+    $response->assertCreated();
+    $path = $response->json('data.image_path');
+
+    expect($path)->not->toBeNull()
+        ->and($path)->not->toContain('etc/passwd')
+        ->and($path)->toEndWith('.jpg');
+    \Illuminate\Support\Facades\Storage::disk('local')->assertExists($path);
+
+    // The stored bytes decode as a real image (re-encoded, not a
+    // pass-through of whatever the client uploaded).
+    $stored = \Illuminate\Support\Facades\Storage::disk('local')->get($path);
+    expect(@imagecreatefromstring($stored))->not->toBeFalse();
+});

@@ -3,6 +3,7 @@
 namespace Modules\Order\App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Services\ImageUploadService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -53,7 +54,7 @@ class OrderController extends Controller
         unset($data['line_items']);
 
         if ($request->hasFile('image')) {
-            $data['item_image_path'] = $request->file('image')->store('orders', 'local');
+            $data['item_image_path'] = ImageUploadService::storeReencoded($request->file('image'), 'orders');
         }
         unset($data['image']);
 
@@ -99,7 +100,7 @@ class OrderController extends Controller
             if ($order->item_image_path) {
                 Storage::disk('local')->delete($order->item_image_path);
             }
-            $data['item_image_path'] = $request->file('image')->store('orders', 'local');
+            $data['item_image_path'] = ImageUploadService::storeReencoded($request->file('image'), 'orders');
         }
         unset($data['image']);
 

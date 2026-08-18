@@ -3,6 +3,7 @@
 namespace Modules\Party\App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Services\ImageUploadService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -46,7 +47,7 @@ class PartyController extends Controller
         if ($request->hasFile('image')) {
             // sdd.md §8: stored outside the public web root, served later
             // via a signed URL route rather than a direct public path.
-            $data['image_path'] = $request->file('image')->store('parties', 'local');
+            $data['image_path'] = ImageUploadService::storeReencoded($request->file('image'), 'parties');
         }
         unset($data['image']);
 
@@ -63,7 +64,7 @@ class PartyController extends Controller
             if ($party->image_path) {
                 Storage::disk('local')->delete($party->image_path);
             }
-            $data['image_path'] = $request->file('image')->store('parties', 'local');
+            $data['image_path'] = ImageUploadService::storeReencoded($request->file('image'), 'parties');
         }
         unset($data['image']);
 

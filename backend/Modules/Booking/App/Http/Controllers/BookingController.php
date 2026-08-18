@@ -3,6 +3,7 @@
 namespace Modules\Booking\App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Services\ImageUploadService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -45,7 +46,7 @@ class BookingController extends Controller
         unset($data['line_items']);
 
         if ($request->hasFile('image')) {
-            $data['item_image_path'] = $request->file('image')->store('bookings', 'local');
+            $data['item_image_path'] = ImageUploadService::storeReencoded($request->file('image'), 'bookings');
         }
         unset($data['image']);
 
@@ -79,7 +80,7 @@ class BookingController extends Controller
             if ($booking->item_image_path) {
                 Storage::disk('local')->delete($booking->item_image_path);
             }
-            $data['item_image_path'] = $request->file('image')->store('bookings', 'local');
+            $data['item_image_path'] = ImageUploadService::storeReencoded($request->file('image'), 'bookings');
         }
         unset($data['image']);
 

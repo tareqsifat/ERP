@@ -124,3 +124,25 @@ test('a user without accounting.voucher.create cannot record a voucher', functio
         'payment_type' => 'cash', 'date' => now()->toDateString(),
     ])->assertStatus(403);
 });
+
+// failed_doc.md §2 Pass 3: a cheque issued for one party could previously
+// be attached to a voucher naming a different party_id — a data-
+// integrity gap, not an authorization bypass, but worth closing.
+test('a voucher cannot attach a cheque that was issued for a different party', function () {
+    actingAsRole('Accountant');
+    $chequeParty = Party::factory()->supplier()->create();
+    $otherParty = Party::factory()->supplier()->create();
+    $cheque = \Modules\Accounting\App\Models\Cheque::factory()->create(['party_id' => $chequeParty->id]);
+
+    $this->postJson('/api/v1/vouchers', [
+        'type' => 'debit', 'purpose' => 'payment', 'party_id' => $otherParty->id,
+        'payment_type' => 'cheque', 'cheque_id' => $cheque->id,
+        'amount' => 100, 'date' => now()->toDateString(),
+    ])->assertStatus(422)->assertJsonValidationErrors('cheque_id');
+
+    $this->postJson('/api/v1/vouchers', [
+        'type' => 'debit', 'purpose' => 'payment', 'party_id' => $chequeParty->id,
+        'payment_type' => 'cheque', 'cheque_id' => $cheque->id,
+        'amount' => 100, 'date' => now()->toDateString(),
+    ])->assertCreated();
+});

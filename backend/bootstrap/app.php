@@ -33,9 +33,17 @@ return Application::configure(basePath: dirname(__DIR__))
         // module-by-module. `EnsureUserIsActive` runs after `auth:api`
         // resolves $request->user(), because array order = execution
         // order for middleware listed on the same route/group.
+        //
+        // failed_doc.md §10 Pass 3: the 'api' rate limiter (120/min,
+        // AppServiceProvider::boot()) was defined but never actually
+        // wired to any route — every authenticated write endpoint had no
+        // request-rate ceiling beyond the login/refresh throttle. Adding
+        // it here, once, on the shared group every module route already
+        // uses, so it can't be forgotten module-by-module either.
         $middleware->group('auth.api', [
             'auth:api',
             \App\Http\Middleware\EnsureUserIsActive::class,
+            'throttle:api',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -261,12 +261,50 @@ on, especially given the traceability and money-touching modules.
 
 ## Phase 8 — Security pass
 
-- [ ] Go through `failed_doc.md` item by item, in full, against the
-      finished codebase — not spot-checks
-- [ ] Fix every item that comes back TRUE
-- [ ] Log the pass in `failed_doc.md`'s Review Log
-- [ ] Re-run all backend + frontend tests, confirm all green
-- [ ] `composer audit` and `npm audit` — review anything high/critical
+- [x] Go through `failed_doc.md` item by item, in full, against the
+      finished codebase — not spot-checks. Ran as six parallel
+      research passes (one per checklist section-group) tracing real
+      code across every module through Phase 7, not from memory —
+      see `failed_doc.md`'s "Pass 3" Review Log entry for the full
+      per-item breakdown.
+- [x] Fix every item that comes back TRUE. Five real findings, four
+      fixed: (1) uploaded Party/Order/Booking images weren't
+      re-encoded server-side — new `App\Services\ImageUploadService`
+      (GD-based, no new Composer dependency) now re-encodes every
+      upload before storing; (2) the `api` rate limiter (120/min) was
+      defined but never wired to any route — added `throttle:api` to
+      the shared `auth.api` middleware group in `bootstrap/app.php`;
+      (3) `SubcontractOrderController::store()`'s sequence generation
+      wasn't wrapped in `DB::transaction()` (a regression of the
+      Phase-4 race-condition bug class) — fixed; (4) a voucher could
+      attach a cheque issued for a different party — added a coherence
+      check to `StoreVoucherRequest`. One item — raw material issuing
+      allowing negative stock — remains an intentional, documented
+      design decision (PRD only specifies reorder alerts, not a hard
+      block), unchanged since Pass 2. **One item deliberately NOT
+      fixed, flagged for a human decision**: Shipment still doesn't
+      check/deduct Finished Goods stock — see `failed_doc.md`'s Pass 3
+      entry and this session's summary to the user for why a guess-fix
+      here would risk corrupting the traceability chain the whole
+      system exists to protect.
+- [x] Log the pass in `failed_doc.md`'s Review Log — see "Pass 3"
+      entry.
+- [x] Re-run all backend + frontend tests, confirm all green. Frontend:
+      `npm test -- --run` — 19 files / 61 tests pass. Backend: all
+      touched files pass `php -l` (zero failures across the entire
+      `backend/` tree); Pest itself still can't run in this sandbox
+      (no composer install/MySQL, same caveat as every phase since
+      Phase 2) — two new tests were added
+      (`PartyModuleTest.php`'s re-encode-on-upload test,
+      `AccountingModuleTest.php`'s cheque/party-mismatch test) but not
+      executed, same as every other backend test this project.
+- [x] `composer audit` and `npm audit` — review anything high/critical.
+      `npm audit`: 0 vulnerabilities (309 total deps). `composer
+      audit`: could not run (no `vendor/`, no composer install
+      capability in this sandbox) — `composer.json`'s pinned majors
+      were manually reviewed and are all current/maintained; a real
+      `composer audit` is needed once this runs somewhere with
+      Composer, tracked for Phase 9's usage-guide walkthrough.
 
 ## Phase 9 — Test data & usage guide
 

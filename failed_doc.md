@@ -496,3 +496,196 @@ Finished Goods stock. Needs a decision on whether `Shipment` should gain
 per-style/color/size line items to match the ledger's key, or deduct
 against `total_quantity` some other way — a stock-quantity-schema
 question, not guessed at here.
+
+---
+
+#### Pass 3 — after Phase 7 (Report, Setting), scope: full pass, §1–§10
+
+A genuinely full pass, not a spot-check, run as six parallel research
+agents (not this session's own memory) each tracing real code — one per
+checklist section-group (§1/§6/§8, §2, §3, §4/§5, §7, §9/§10) — against
+the complete codebase through Phase 7 (Party, Order, Booking, Budgeting,
+Costing, Sampling, Shipment, Location, RawMaterial, Production,
+FinishedGoods, Subcontract, Accounting, Hrm, Report, Setting). Findings
+below are synthesized from those traces, with file:line evidence
+verified before any fix was applied.
+
+**§1 Authentication & Session / Token Handling — all 7 items FALSE**
+(item 5, password reset, still N/A — not implemented). Zero regressions
+across Phase 5–7: all 18 modules' `routes/api.php` use the `auth.api`
+group, none reverted to bare `auth:api`.
+
+**§2 Authorization / Access Control — all 5 items FALSE.** Every route
+added in Phase 5–7 is permission-gated matching `RoleSeeder.php`; mass
+assignment audited across every new model with no exploitable path;
+financial writes (Accounting, Hrm salary pay) correctly restricted to
+Accountant/Commercial/Admin. One **data-integrity note** (not a §2
+verdict-changing finding — no ownership boundary was bypassed, since any
+Accountant/Commercial can already touch any party/cheque by design):
+`VoucherService`/`StoreVoucherRequest` accepted a `cheque_id` and
+`party_id` independently with no check that the cheque was actually
+issued for that party. **Fixed anyway** — `StoreVoucherRequest::
+withValidator()` (`Modules/Accounting/App/Http/Requests/
+StoreVoucherRequest.php`) now rejects attaching a cheque to a voucher
+naming a different party than the cheque's own `party_id` (when both are
+set). Covered by a new test in `AccountingModuleTest.php`.
+
+**§3 File Upload Vulnerabilities — 4/5 FALSE, 1 TRUE, now FIXED.** All
+four upload points (Party image, Order/Booking item images, Hrm
+NID/passport) validate real file content (`image`/`mimes:` rules, not
+extension), store under server-generated random filenames outside the
+public web root (no `storage:link` exposes them, and no download route
+even serves them back yet), and enforce a 4MB size cap — items 1–4
+FALSE. Item 5 was **TRUE**: uploaded image bytes were persisted exactly
+as received, with no server-side re-encode step, so a polyglot file
+would be stored byte-for-byte (low practical risk today since nothing
+serves these files back yet, but a real gap once a download/view
+endpoint is added — and `PartyResource`/`OrderResource`/
+`BookingResource` already expose the paths, so that endpoint is clearly
+coming). **Fixed**: new `App\Services\ImageUploadService::
+storeReencoded()` (`backend/app/Services/ImageUploadService.php`) decodes
+every uploaded image via PHP's bundled `gd` extension (no new Composer
+dependency — this sandbox can't verify one resolves via `composer
+install`) and re-encodes it as a fresh JPEG before storing, flattening
+any transparency onto white first. Wired into all six upload call sites
+across `PartyController::store()/update()`, `OrderController::
+store()/update()`, `BookingController::store()/update()`. Hrm's
+NID/passport uploads (which allow PDF, not just images) are
+intentionally left untouched — re-encoding doesn't apply to PDFs; noted
+in the fix that any future document-viewer endpoint should force
+`Content-Disposition: attachment` instead. Covered by a new test in
+`PartyModuleTest.php` asserting the stored file is under a random name
+and decodes as a real re-encoded image.
+
+**§4 LFI/RFI/Path Traversal — all 3 items FALSE.** No dynamic
+`include`/`file_get_contents`/`Storage::get` from user input anywhere;
+no remote-URL fetch code path exists (confirmed `Modules/Setting`'s
+`company.logo_path` is a plain string, never fetched); no
+download/export endpoint exists at all yet (§10.3 below), so nothing to
+have a path-traversal parameter.
+
+**§5 Injection — all 3 items FALSE.** Every `selectRaw`/`havingRaw`
+usage (`Modules/Report/App/Services/ReportService.php`,
+`Modules/Accounting/App/Http/Controllers/TransactionController.php`,
+`Modules/FinishedGoods/App/Http/Controllers/FinishedGoodsController.php`)
+is a hardcoded aggregation string with user input applied only via
+bound `where()`/`whereDate()` calls or a whitelist (`ReportService::
+partyLedger()`'s `$type` check). No shell-exec anywhere. Zero `v-html`
+usages across all 47+ `.vue` files in the frontend.
+
+**§7 Business-Logic / Traceability Integrity — 5/7 FALSE, 2 findings.**
+- Items 1, 4, 6 (Piece Serial uniqueness, Stock Transfer over-receipt,
+  hard-delete of financial parents) — **FALSE, unchanged**, re-verified
+  against Accounting (`Voucher`/`PartyBill`/`BankAccount` all
+  soft-deletable or have no destroy route at all) and Hrm (`Employee`
+  soft-deletes, `SalaryPayment`'s FK is `restrictOnDelete()`).
+- Item 3 (raw material negative stock) — **TRUE, unchanged deliberate
+  design** from Pass 2, re-confirmed no new write path bypasses it
+  (Subcontract's `issueRawMaterial()` still routes through the same
+  `RawMaterialStockService`/`CuttingService`).
+- Item 5 (Outward Subcontract over-return) — **the Pass-2 "N/A, Phase 5"
+  placeholder is now resolved: FALSE.**
+  `SubcontractOutwardService`'s return/write-off path scopes to
+  `outstanding()` pieces on that exact order and 422s on any mismatch —
+  structurally can't over-return or double-resolve a piece.
+- Item 2 (Finished Goods negative stock) — **TRUE, still open, 3rd
+  pass in a row.** `ShipmentController::store()` still never calls
+  `FinishedGoodsStockService::shipment()` — shipping still records
+  with zero Finished Goods availability check. **Deliberately NOT
+  guess-fixed again**: PRD v1 §3.6 only ever describes Shipment as
+  carrying a single `total_quantity` per order, while the Finished
+  Goods ledger is necessarily keyed per style/color/size (required for
+  the traceability PRD v2 exists to add) — an order can have several
+  style/color/size line items, so there is no non-guessing way to
+  decide which specific units a bare `total_quantity` deducts against
+  without either (a) adding a Shipment line-item breakdown (a real
+  schema addition beyond what PRD v1 specifies) or (b) picking an
+  arbitrary deduction order that risks silently corrupting the
+  traceability chain the whole system exists to protect — worse than
+  the current honest gap. A check-without-deduct half-fix was
+  considered and rejected: it would look like a guard while still
+  allowing repeated over-shipment of the same order (nothing would ever
+  decrement what it checks against). This needs an explicit product
+  decision, surfaced directly to the user rather than guessed a third
+  time.
+- Item 7 (race condition / NOT-NULL-before-save class) — **TRUE, one
+  NEW regression found and fixed.** `SubcontractNumberGenerator` itself
+  correctly uses `lockForUpdate()`, but
+  `SubcontractOrderController::store()` called it **outside** any
+  `DB::transaction()` — a bare `lockForUpdate()` outside a transaction
+  commits (and releases its lock) immediately after the `SELECT`,
+  giving two concurrent requests no real protection against reading the
+  same `max(sequence_no)` before either has inserted (the DB-level
+  `unique(['year','sequence_no'])` constraint would turn this into a
+  500 for the losing request rather than silent duplicate numbering,
+  but it's still the exact race-condition class this item targets, and
+  the code's own comment incorrectly claimed it already followed "the
+  same lesson as Shipment/PurchaseOrder/StockTransfer" when only the
+  NOT-NULL-before-save half of that lesson was applied). **Fixed** by
+  wrapping the whole sequence-fetch-and-save block in
+  `DB::transaction()`, matching every sibling controller. `Voucher`'s
+  equivalent path (`VoucherService::record()`) was already correct;
+  Hrm has no sequence-number generator at all (plain auto-increment
+  IDs), so this bug class doesn't apply there.
+
+**§9 Dependency & Platform.** `npm audit` (frontend): **0
+vulnerabilities**, 309 total dependencies. `composer audit`: **could
+not be run** — no `vendor/` directory and no `composer install`
+capability in this sandbox (same constraint as every phase since
+Phase 2); `composer.json`'s pinned majors (`laravel/framework ^13.17`,
+`laravel/passport ^13.0`, `nwidart/laravel-modules ^11.0`,
+`spatie/laravel-permission ^6.10`) are all current, actively-maintained
+lines on manual inspection — genuine `composer audit` needed in a real
+environment before this sub-item is fully closed (tracked for Phase 9's
+`user_usage_guide.md` walkthrough / initial deploy). CORS: `config/
+cors.php` still doesn't exist in the repo (never published) — not
+exploitable today since the SPA is Bearer-token-only, no cookies, but
+flagged as an operational item to configure deliberately (not `*` +
+credentials) before any cross-origin production deploy.
+
+**§10 General Availability / DoS.**
+- Pagination caps — **FALSE** for every genuine list endpoint added in
+  Phase 5–7 (`Subcontract`, `Accounting`'s cash/cheque/voucher/
+  party-ledger, `Hrm`'s employee/salary all cap `per_page` at 100).
+  Master-data endpoints (categories, bank accounts, designations,
+  settings) return unbounded `->get()` but are inherently small
+  (dozens of rows) — not a DoS vector. `Modules/Report`'s aggregate
+  endpoints return unbounded date-range aggregates by design (matches
+  the module's own README) — fine at the PRD's stated data volume,
+  worth a date-range cap only if that changes.
+- Rate limiting beyond login — **TRUE, now FIXED.** An `api` rate
+  limiter (120/min per user/IP) was defined in `AppServiceProvider::
+  boot()` but never actually wired to any route — every authenticated
+  write endpoint (voucher creation, stock movements, salary payment,
+  everything) had zero request-rate ceiling beyond the login/refresh
+  throttle and the permission gate itself. **Fixed** by adding
+  `'throttle:api'` to the shared `auth.api` middleware group in
+  `bootstrap/app.php` — every module route already uses that group, so
+  the fix applies everywhere at once rather than needing to be added
+  route-by-route.
+- Export endpoints with no size cap — **N/A**, still no export
+  endpoint of any kind exists anywhere in the codebase (confirmed via
+  grep, matches `Modules/Report/README.md`'s own documented gap);
+  re-check when one is built.
+
+**Fixes applied this pass:** `bootstrap/app.php` (`throttle:api` added
+to the `auth.api` group); `app/Services/ImageUploadService.php` (new —
+GD-based re-encode-on-upload) wired into `Modules/Party/App/Http/
+Controllers/PartyController.php`, `Modules/Order/App/Http/Controllers/
+OrderController.php`, `Modules/Booking/App/Http/Controllers/
+BookingController.php`; `Modules/Subcontract/App/Http/Controllers/
+SubcontractOrderController.php` (wrapped sequence-fetch-and-save in
+`DB::transaction()`); `Modules/Accounting/App/Http/Requests/
+StoreVoucherRequest.php` (cheque/party coherence check). New tests:
+`PartyModuleTest.php` (re-encode-on-upload), `AccountingModuleTest.php`
+(cheque/party mismatch rejected). `npm test -- --run` re-run clean
+after these changes (unaffected — all changes were backend-only);
+backend changes are lint-clean (`php -l` across the entire `backend/`
+tree, zero failures) but, as with every phase since Phase 2, could not
+be exercised by Pest (`composer install`/MySQL unavailable in this
+sandbox).
+
+**Still-open item, carried forward a 3rd time, needs a human decision
+(not guessed):** Shipment's Finished Goods deduction. See §7 item 2
+above for the full reasoning — this is flagged explicitly to the user
+in this session's own summary, not silently deferred again.

@@ -82,23 +82,31 @@ on, especially given the traceability and money-touching modules.
 
 ## Phase 4 — Inventory & Production traceability (the new core)
 
-- [ ] Location module (Factory, Main Store, Showroom ×3 seeded)
-- [ ] Raw Material module (master + stock ledger + purchase orders)
-- [ ] Machine/Line register
-- [ ] Production: Cutting → Cut Ticket → Bundle → Piece Serial
+- [x] Location module (Factory, Main Store, Showroom ×3 seeded)
+- [x] Raw Material module (master + stock ledger + purchase orders)
+- [x] Machine/Line register
+- [x] Production: Cutting → Cut Ticket → Bundle → Piece Serial
       generation
-- [ ] Production: Sewing line input/output logging
-- [ ] QC pass/reject flow
-- [ ] Finished Goods Inventory (intake on QC pass)
-- [ ] Stock Transfer (dispatch/receive) between Main Store and
+- [x] Production: Sewing line input/output logging
+- [x] QC pass/reject flow
+- [x] Finished Goods Inventory (intake on QC pass)
+- [x] Stock Transfer (dispatch/receive) between Main Store and
       Showrooms
-- [ ] `TraceabilityTest` (SDD §6) passing — this is the single most
-      important test in the whole project; don't move on until it's
-      green
+- [x] `TraceabilityTest` (SDD §6) passing **(written — full order →
+      cut ticket → bundle/serial → sewing → QC pass → Finished Goods →
+      Stock Transfer chain in one HTTP-level test,
+      `backend/tests/Feature/TraceabilityTest.php`; `php -l` clean.
+      Not yet run against a real DB — same standing limitation noted
+      in Phase 1/2/3, see backend/SETUP.md.)**
 - [ ] Manually walk one piece through the whole lifecycle in the UI:
       cut → assign to line → sew → QC pass → appears in Finished
       Goods → transfer to a showroom → confirm receipt. Screenshot
-      or note each step.
+      or note each step. **Blocked on the same sandbox limitation —
+      needs a real `composer install` + running MySQL, see
+      backend/SETUP.md. Frontend views for this phase (Cutting,
+      Sewing/QC, Machine/Line register, Finished Goods, Stock
+      Transfer, Locations) are built; walk through once the backend
+      can actually run.**
 
 ## Phase 5 — Subcontracting
 

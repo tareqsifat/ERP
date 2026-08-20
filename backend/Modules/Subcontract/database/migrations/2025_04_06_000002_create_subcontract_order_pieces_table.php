@@ -33,7 +33,10 @@ return new class extends Migration
             $table->timestamp('resolved_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['subcontract_order_id', 'piece_serial_id']);
+            // Explicit short name: the auto-generated name (table + both
+            // column names + "_unique") is 68 characters, over MySQL's
+            // 64-character identifier limit.
+            $table->unique(['subcontract_order_id', 'piece_serial_id'], 'subcontract_order_pieces_order_piece_unique');
         });
     }
 

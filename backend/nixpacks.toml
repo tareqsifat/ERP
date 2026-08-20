@@ -1,0 +1,15 @@
+# Railway build config (Nixpacks). See deploy/start.sh for the boot
+# sequence and RAILWAY.md for the full deploy runbook.
+providers = ["php"]
+
+[phases.setup]
+nixPkgs = ["php83", "php83Packages.composer"]
+
+[phases.install]
+cmds = ["composer install --no-dev --optimize-autoloader --no-interaction --no-progress"]
+
+[phases.build]
+cmds = ["php artisan event:cache"]
+
+[start]
+cmd = "bash deploy/start.sh"

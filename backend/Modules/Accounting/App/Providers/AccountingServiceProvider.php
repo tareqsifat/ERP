@@ -2,7 +2,7 @@
 
 namespace Modules\Accounting\App\Providers;
 
-use Nwidart\Modules\Support\ModuleServiceProvider;
+use Illuminate\Support\ServiceProvider;
 
 /**
  * sdd.md §2: this is the 1:1 backend half of the Modules/Accounting ↔
@@ -13,7 +13,7 @@ use Nwidart\Modules\Support\ModuleServiceProvider;
  * Modules/Accounting/routes/api.php directly instead, so keep route
  * definitions out of this provider.
  */
-class AccountingServiceProvider extends ModuleServiceProvider
+class AccountingServiceProvider extends ServiceProvider
 {
     protected string $name = 'Accounting';
 

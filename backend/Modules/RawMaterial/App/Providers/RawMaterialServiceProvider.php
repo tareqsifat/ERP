@@ -2,7 +2,7 @@
 
 namespace Modules\RawMaterial\App\Providers;
 
-use Nwidart\Modules\Support\ModuleServiceProvider;
+use Illuminate\Support\ServiceProvider;
 
 /**
  * sdd.md §2: this is the 1:1 backend half of the Modules/RawMaterial ↔
@@ -13,7 +13,7 @@ use Nwidart\Modules\Support\ModuleServiceProvider;
  * Modules/RawMaterial/routes/api.php directly instead, so keep route
  * definitions out of this provider.
  */
-class RawMaterialServiceProvider extends ModuleServiceProvider
+class RawMaterialServiceProvider extends ServiceProvider
 {
     protected string $name = 'RawMaterial';
 

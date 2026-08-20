@@ -2,7 +2,7 @@
 
 namespace Modules\FinishedGoods\App\Providers;
 
-use Nwidart\Modules\Support\ModuleServiceProvider;
+use Illuminate\Support\ServiceProvider;
 
 /**
  * sdd.md §2: this is the 1:1 backend half of the Modules/FinishedGoods ↔
@@ -13,7 +13,7 @@ use Nwidart\Modules\Support\ModuleServiceProvider;
  * Modules/FinishedGoods/routes/api.php directly instead, so keep route
  * definitions out of this provider.
  */
-class FinishedGoodsServiceProvider extends ModuleServiceProvider
+class FinishedGoodsServiceProvider extends ServiceProvider
 {
     protected string $name = 'FinishedGoods';
 

@@ -2,7 +2,7 @@
 
 namespace Modules\Report\App\Providers;
 
-use Nwidart\Modules\Support\ModuleServiceProvider;
+use Illuminate\Support\ServiceProvider;
 
 /**
  * sdd.md §2: this is the 1:1 backend half of the Modules/Report ↔
@@ -13,7 +13,7 @@ use Nwidart\Modules\Support\ModuleServiceProvider;
  * Modules/Report/routes/api.php directly instead, so keep route
  * definitions out of this provider.
  */
-class ReportServiceProvider extends ModuleServiceProvider
+class ReportServiceProvider extends ServiceProvider
 {
     protected string $name = 'Report';
 

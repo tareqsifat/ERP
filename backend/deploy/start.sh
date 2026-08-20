@@ -17,8 +17,18 @@ set -euo pipefail
 echo "==> php artisan config:cache"
 php artisan config:cache
 
-echo "==> php artisan migrate --force"
-php artisan migrate --force
+# One-time recovery switch: set MIGRATE_FRESH=1 to drop and recreate
+# every table instead of the normal incremental migrate. Only ever set
+# this deliberately (e.g. to recover a migrations-table/schema
+# mismatch on a database with no real data yet) and unset it again
+# right after - it is destructive on any database with real rows.
+if [ "${MIGRATE_FRESH:-}" = "1" ]; then
+  echo "==> MIGRATE_FRESH=1 set - php artisan migrate:fresh --force (DESTRUCTIVE, one-time recovery only)"
+  php artisan migrate:fresh --force
+else
+  echo "==> php artisan migrate --force"
+  php artisan migrate --force
+fi
 
 echo "==> php artisan db:seed --force"
 php artisan db:seed --force

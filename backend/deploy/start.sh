@@ -26,6 +26,18 @@ php artisan db:seed --force
 echo "==> php artisan storage:link (idempotent, ignores existing link)"
 php artisan storage:link || true
 
+# First-boot only: create the Passport password-grant client the SPA
+# needs to log in (RAILWAY.md step 4). Guarded on the env var being
+# empty so this never runs twice. The Client ID/Secret are only
+# printed to this boot's logs — copy them into
+# PASSPORT_PASSWORD_GRANT_CLIENT_ID/SECRET as real env vars afterward;
+# until that's done, every login attempt will fail (expected, one-time).
+if [ -z "${PASSPORT_PASSWORD_GRANT_CLIENT_ID:-}" ]; then
+  echo "==> no PASSPORT_PASSWORD_GRANT_CLIENT_ID set yet - creating the Passport password-grant client"
+  php artisan passport:client --password --name="Garments ERP SPA" --no-interaction || true
+  echo "==> copy the Client ID/Secret above into PASSPORT_PASSWORD_GRANT_CLIENT_ID/SECRET env vars, then redeploy"
+fi
+
 PORT="${PORT:-8000}"
 echo "==> booting on 0.0.0.0:${PORT}"
 exec php artisan serve --host=0.0.0.0 --port="${PORT}"

@@ -63,6 +63,32 @@ const router = createRouter({
   ],
 })
 
+// Every route component below is lazy-loaded (`() => import(...)`), so its
+// JS chunk is fetched by a content-hashed filename (e.g.
+// `BookingListView-CTJw3YF_.js`) built fresh on every deploy. A browser tab
+// left open across a redeploy still has the OLD index.html in memory, so
+// navigating to a route it hasn't loaded yet requests a chunk hash that no
+// longer exists on the server — Vite/the browser reports this as "error
+// loading dynamically imported module". The fix isn't a code bug, it's a
+// stale tab: reload once to pick up the new index.html and matching chunk
+// hashes. Guarded by sessionStorage so a *genuinely* broken chunk (a real
+// 404, bad network) fails visibly after one retry instead of reload-looping.
+router.onError((error, to) => {
+  const message = error?.message ?? ''
+  const isChunkLoadError =
+    /Failed to fetch dynamically imported module/i.test(message) ||
+    /error loading dynamically imported module/i.test(message) ||
+    /Importing a module script failed/i.test(message)
+
+  if (!isChunkLoadError) return
+
+  const reloadKey = `chunk-reload:${to.fullPath}`
+  if (sessionStorage.getItem(reloadKey)) return // already retried once, don't loop
+
+  sessionStorage.setItem(reloadKey, '1')
+  window.location.href = to.fullPath
+})
+
 // sdd.md §4/§6: role/permission checks must ALSO exist on the backend API
 // (failed_doc.md §2) — this guard is a UX convenience only, never the
 // source of truth for authorization.
